@@ -68,7 +68,8 @@ async function submitToNetlify(form: HTMLFormElement) {
 }
 
 export function ContactForm({ variant }: ContactFormProps) {
-  const formName = variant === "consultation" ? "consultation" : "contact";
+  const formName = "seed-contact";
+  const inquiryType = variant === "consultation" ? "無料相談" : "お問い合わせ";
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const {
@@ -135,6 +136,7 @@ export function ContactForm({ variant }: ContactFormProps) {
         noValidate
       >
         <input type="hidden" name="form-name" value={formName} />
+        <input type="hidden" name="inquiryType" value={inquiryType} />
         <p className="sr-only" aria-hidden="true">
           <label>
             入力しないでください
