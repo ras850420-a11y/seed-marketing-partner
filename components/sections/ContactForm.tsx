@@ -39,6 +39,8 @@ const inputClass =
 const textareaClass =
   "mt-2 min-h-36 w-full resize-y rounded-lg border border-line bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-teal focus:ring-4 focus:ring-teal/10";
 
+const netlifyFormPath = "/netlify-forms.html";
+
 function encodeFormData(formData: FormData) {
   const params = new URLSearchParams();
 
@@ -56,7 +58,7 @@ function isLocalPreview() {
 }
 
 async function submitToNetlify(form: HTMLFormElement) {
-  const response = await fetch("/", {
+  const response = await fetch(netlifyFormPath, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: encodeFormData(new FormData(form))
@@ -127,7 +129,7 @@ export function ContactForm({ variant }: ContactFormProps) {
     <Card>
       <form
         className="grid gap-5"
-        action="/"
+        action={netlifyFormPath}
         method="POST"
         name={formName}
         data-netlify="true"
