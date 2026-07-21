@@ -22,6 +22,7 @@ export function createPageMetadata({
   noIndex = false
 }: PageMetadataInput): Metadata {
   const url = absoluteUrl(path);
+  const imageUrl = absoluteUrl(image);
 
   return {
     title,
@@ -41,7 +42,7 @@ export function createPageMetadata({
       siteName: `${siteConfig.name}｜${siteConfig.subtitle}`,
       images: [
         {
-          url: image,
+          url: imageUrl,
           width: 1200,
           height: 630,
           alt: `${siteConfig.name} OGP`
@@ -54,7 +55,7 @@ export function createPageMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [image]
+      images: [imageUrl]
     }
   };
 }
