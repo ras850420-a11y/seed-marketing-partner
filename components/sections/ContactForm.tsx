@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type BaseSyntheticEvent, type ReactNode } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -36,8 +36,41 @@ interface ContactFormProps {
 const inputClass =
   "mt-2 min-h-12 w-full rounded-lg border border-line bg-white px-4 text-base text-ink outline-none transition focus:border-teal focus:ring-4 focus:ring-teal/10";
 
+const textareaClass =
+  "mt-2 min-h-36 w-full resize-y rounded-lg border border-line bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-teal focus:ring-4 focus:ring-teal/10";
+
+function encodeFormData(formData: FormData) {
+  const params = new URLSearchParams();
+
+  formData.forEach((value, key) => {
+    if (typeof value === "string") {
+      params.append(key, value);
+    }
+  });
+
+  return params.toString();
+}
+
+function isLocalPreview() {
+  return window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+}
+
+async function submitToNetlify(form: HTMLFormElement) {
+  const response = await fetch("/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: encodeFormData(new FormData(form))
+  });
+
+  if (!response.ok && !isLocalPreview()) {
+    throw new Error("Netlify form submission failed.");
+  }
+}
+
 export function ContactForm({ variant }: ContactFormProps) {
+  const formName = variant === "consultation" ? "consultation" : "contact";
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -56,18 +89,29 @@ export function ContactForm({ variant }: ContactFormProps) {
     }
   });
 
-  function onSubmit() {
-    setSubmitted(true);
-    reset();
+  async function onSubmit(_values: FormValues, event?: BaseSyntheticEvent) {
+    setSubmitError(null);
+
+    const form = event?.target;
+    if (!(form instanceof HTMLFormElement)) {
+      setSubmitError("送信に失敗しました。時間をおいて再度お試しください。");
+      return;
+    }
+
+    try {
+      await submitToNetlify(form);
+      setSubmitted(true);
+      reset();
+    } catch {
+      setSubmitError("送信に失敗しました。時間をおいて再度お試しください。");
+    }
   }
 
   if (submitted) {
     return (
       <Card>
         <h2 className="text-xl font-bold text-brand">
-          {variant === "consultation"
-            ? "ありがとうございます。"
-            : "お問い合わせありがとうございます。"}
+          {variant === "consultation" ? "ありがとうございます。" : "お問い合わせありがとうございます。"}
         </h2>
         <p className="mt-4 leading-8 text-muted">
           {variant === "consultation"
@@ -80,7 +124,22 @@ export function ContactForm({ variant }: ContactFormProps) {
 
   return (
     <Card>
-      <form className="grid gap-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <form
+        className="grid gap-5"
+        method="POST"
+        name={formName}
+        data-netlify-honeypot="bot-field"
+        onSubmit={handleSubmit(onSubmit)}
+        noValidate
+      >
+        <input type="hidden" name="form-name" value={formName} />
+        <p className="sr-only" aria-hidden="true">
+          <label>
+            入力しないでください
+            <input name="bot-field" tabIndex={-1} autoComplete="off" />
+          </label>
+        </p>
+
         {variant === "consultation" ? (
           <Field label="会社名" optional error={errors.companyName?.message}>
             <input className={inputClass} type="text" autoComplete="organization" {...register("companyName")} />
@@ -114,15 +173,14 @@ export function ContactForm({ variant }: ContactFormProps) {
           required
           error={errors.message?.message}
         >
-          <textarea
-            className="mt-2 min-h-36 w-full resize-y rounded-lg border border-line bg-white px-4 py-3 text-base text-ink outline-none transition focus:border-teal focus:ring-4 focus:ring-teal/10"
-            {...register("message")}
-          />
+          <textarea className={textareaClass} {...register("message")} />
         </Field>
+
+        {submitError ? <p className="text-sm font-bold text-accent">{submitError}</p> : null}
 
         <div>
           <Button type="submit" size="lg" disabled={isSubmitting}>
-            送信
+            {isSubmitting ? "送信中" : "送信"}
           </Button>
         </div>
       </form>
@@ -132,7 +190,7 @@ export function ContactForm({ variant }: ContactFormProps) {
 
 interface FieldProps {
   label: string;
-  children: React.ReactNode;
+  children: ReactNode;
   error?: string;
   required?: boolean;
   optional?: boolean;
@@ -143,12 +201,8 @@ function Field({ label, children, error, required = false, optional = false }: F
     <label className="block text-sm font-bold text-brand">
       <span className="flex items-center gap-2">
         {label}
-        {required ? (
-          <span className="rounded bg-accent/10 px-2 py-0.5 text-xs text-accent">必須</span>
-        ) : null}
-        {optional ? (
-          <span className="rounded bg-soft px-2 py-0.5 text-xs text-muted">任意</span>
-        ) : null}
+        {required ? <span className="rounded bg-accent/10 px-2 py-0.5 text-xs text-accent">必須</span> : null}
+        {optional ? <span className="rounded bg-soft px-2 py-0.5 text-xs text-muted">任意</span> : null}
       </span>
       {children}
       {error ? <span className="mt-2 block text-sm text-accent">{error}</span> : null}
