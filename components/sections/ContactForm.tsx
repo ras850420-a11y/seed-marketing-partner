@@ -126,8 +126,10 @@ export function ContactForm({ variant }: ContactFormProps) {
     <Card>
       <form
         className="grid gap-5"
+        action="/"
         method="POST"
         name={formName}
+        data-netlify="true"
         data-netlify-honeypot="bot-field"
         onSubmit={handleSubmit(onSubmit)}
         noValidate
